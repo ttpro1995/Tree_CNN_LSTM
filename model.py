@@ -301,11 +301,34 @@ class ChildSumTreeLSTM(nn.Module):
                 child_c[idx], child_h[idx] = tree.children[idx].state
         return child_c, child_h
 
+
+class ConvolutionModule(nn.Module):
+    def __init__(self, cuda, emb_dim, kernel_size, stride):
+        super(ConvolutionModule, self).__init__()
+        self.cudaFlag = cuda
+        self.kernel_size = kernel_size
+        self.stride = stride
+
+        self.conv1 = nn.Conv1d(1, emb_dim, kernel_size, stride)
+        # ( emb_dim + (kernel_size -1) -1 )/stride + 1
+        pooling_kernel = (emb_dim - (kernel_size -1)-1)/stride + 1
+        self.pooling = nn.MaxPool1d(pooling_kernel, stride)
+
+        if self.cudaFlag:
+            self.conv1 = self.conv1.cuda()
+            self.pooling = self.pooling.cuda()
+
+    def forward(self, emb):
+        out1 = self.conv1(emb)
+        out2 = self.pooling(out1)
+        o = out2.squeeze().unsqueeze(1)
+        return o
+
+
 ##############################################################################
 # similarity
 class SimilarityModule(nn.Module):
     def __init__(self, cuda, mem_dim, hidden_dim, num_classes):
-        super(SimilarityModule, self).__init__()
         super(SimilarityModule, self).__init__()
         self.cudaFlag = cuda
         self.mem_dim = mem_dim
@@ -372,6 +395,7 @@ class TreeLSTMSentiment(nn.Module):
         super(TreeLSTMSentiment, self).__init__()
         self.cudaFlag = cuda
         self.model_name = model_name
+        self.conv_module = ConvolutionModule(cuda, in_dim, 5, 2)
         if self.model_name == 'dependency':
             self.tree_module = ChildSumTreeLSTM(cuda, in_dim, mem_dim, criterion)
         elif self.model_name == 'constituency':
@@ -380,7 +404,8 @@ class TreeLSTMSentiment(nn.Module):
         self.tree_module.set_output_module(self.output_module)
 
     def forward(self, tree, inputs, training = False, metric = None):
-        tree_state, loss = self.tree_module(tree, inputs, training, metric)
+        c = self.conv_module(inputs)
+        tree_state, loss = self.tree_module(tree, c, training, metric)
         output = tree.output
         return output, loss
 
