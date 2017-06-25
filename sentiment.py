@@ -195,6 +195,8 @@ def main():
     elif args.optim=='adagrad':
         # optimizer   = optim.Adagrad(filter(lambda p: p.requires_grad, model.parameters()), lr=args.lr, weight_decay=args.wd)
         optimizer = optim.Adagrad(model.parameters(), lr=args.lr, weight_decay=args.wd)
+    elif args.optim == 'adadelta':
+        optimizer = optim.Adadelta(model.parameters(), lr = args.lr, weight_decay=args.wd)
     elif args.optim=='adam_combine':
         optimizer = optim.Adam([
                 {'params': model.parameters(), 'lr':args.lr, 'weight_decay':args.wd },

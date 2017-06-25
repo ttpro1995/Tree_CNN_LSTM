@@ -308,7 +308,8 @@ class ConvolutionModule(nn.Module):
         self.cudaFlag = cuda
         self.kernel_size = kernel_size
         self.stride = stride
-
+        self.input_dropout = nn.Dropout(p=0)
+        self.output_dropout = nn.Dropout(p=0)
         self.conv1 = nn.Conv1d(1, emb_dim, kernel_size, stride)
         # ( emb_dim + (kernel_size -1) -1 )/stride + 1
         pooling_kernel = (emb_dim - (kernel_size -1)-1)/stride + 1
@@ -317,12 +318,16 @@ class ConvolutionModule(nn.Module):
         if self.cudaFlag:
             self.conv1 = self.conv1.cuda()
             self.pooling = self.pooling.cuda()
+            self.input_dropout = self.input_dropout.cuda()
+            self.output_dropout = self.output_dropout.cuda()
 
     def forward(self, emb):
-        out1 = self.conv1(emb)
+        i = self.input_dropout(emb)
+        out1 = self.conv1(i)
         out2 = self.pooling(out1)
-        o = out2.squeeze().unsqueeze(1)
-        return o
+        o = out2.squeeze(2).unsqueeze(1)
+        o2 = self.output_dropout(o)
+        return o2
 
 
 ##############################################################################
@@ -418,6 +423,7 @@ class LSTMSentiment(nn.Module):
         self.criterion = criterion
         self.train_subtrees = train_subtrees
         self.num_classes = num_classes
+        self.conv_module = ConvolutionModule(cuda, in_dim, 5, 2)
         if model_name == 'bilstm':
             self.bidirectional = True
             self.output_module = SentimentModule(cuda, 2*mem_dim, num_classes, dropout=True)
@@ -465,7 +471,8 @@ class LSTMSentiment(nn.Module):
                     node = nodes[i]
                 lo, hi = node.lo, node.hi
                 span_vec = vec[lo-1:hi] # [inclusive, excludsive)
-                _, hn = self.lstm.forward(span_vec)
+                c_vec = self.conv_module(span_vec)
+                _, hn = self.lstm(c_vec)
                 h = hn[0]
                 if self.bidirectional:
                     h = torch.cat(h, 1)
@@ -487,12 +494,13 @@ class LSTMSentiment(nn.Module):
             n_subtree = n_subtree -discard_subtree
             return output, loss, n_subtree
         else:
-            _, hn = self.lstm.forward(vec)
+            c_vec = self.conv_module(vec)
+            _, hn = self.lstm(c_vec)
             h = hn[0]
             if self.bidirectional:
                 h = torch.cat(h, 1)
             else:
                 h = torch.squeeze(h, 1)
-            output = self.output_module.forward(h, training)
+            output = self.output_module(h, training)
             return output, _
 
