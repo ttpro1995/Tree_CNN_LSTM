@@ -6,6 +6,7 @@ import Constants
 import utils
 import numpy as np
 import math
+from conv_model import ConvModule
 
 class BinaryTreeLeafModule(nn.Module):
     """
@@ -302,32 +303,32 @@ class ChildSumTreeLSTM(nn.Module):
         return child_c, child_h
 
 
-class ConvolutionModule(nn.Module):
-    def __init__(self, cuda, emb_dim, kernel_size, stride):
-        super(ConvolutionModule, self).__init__()
-        self.cudaFlag = cuda
-        self.kernel_size = kernel_size
-        self.stride = stride
-        self.input_dropout = nn.Dropout(p=0)
-        self.output_dropout = nn.Dropout(p=0)
-        self.conv1 = nn.Conv1d(1, emb_dim, kernel_size, stride)
-        # ( emb_dim + (kernel_size -1) -1 )/stride + 1
-        pooling_kernel = (emb_dim - (kernel_size -1)-1)/stride + 1
-        self.pooling = nn.MaxPool1d(pooling_kernel, stride)
-
-        if self.cudaFlag:
-            self.conv1 = self.conv1.cuda()
-            self.pooling = self.pooling.cuda()
-            self.input_dropout = self.input_dropout.cuda()
-            self.output_dropout = self.output_dropout.cuda()
-
-    def forward(self, emb):
-        i = self.input_dropout(emb)
-        out1 = self.conv1(i)
-        out2 = self.pooling(out1)
-        o = out2.squeeze(2).unsqueeze(1)
-        o2 = self.output_dropout(o)
-        return o2
+# class ConvolutionModule(nn.Module):
+#     def __init__(self, cuda, emb_dim, kernel_size, stride):
+#         super(ConvolutionModule, self).__init__()
+#         self.cudaFlag = cuda
+#         self.kernel_size = kernel_size
+#         self.stride = stride
+#         self.input_dropout = nn.Dropout(p=0)
+#         self.output_dropout = nn.Dropout(p=0)
+#         self.conv1 = nn.Conv1d(1, emb_dim, kernel_size, stride)
+#         # ( emb_dim + (kernel_size -1) -1 )/stride + 1
+#         pooling_kernel = (emb_dim - (kernel_size -1)-1)/stride + 1
+#         self.pooling = nn.MaxPool1d(pooling_kernel, stride)
+#
+#         if self.cudaFlag:
+#             self.conv1 = self.conv1.cuda()
+#             self.pooling = self.pooling.cuda()
+#             self.input_dropout = self.input_dropout.cuda()
+#             self.output_dropout = self.output_dropout.cuda()
+#
+#     def forward(self, emb):
+#         i = self.input_dropout(emb)
+#         out1 = self.conv1(i)
+#         out2 = self.pooling(out1)
+#         o = out2.squeeze(2).unsqueeze(1)
+#         o2 = self.output_dropout(o)
+#         return o2
 
 
 ##############################################################################
@@ -400,7 +401,7 @@ class TreeLSTMSentiment(nn.Module):
         super(TreeLSTMSentiment, self).__init__()
         self.cudaFlag = cuda
         self.model_name = model_name
-        self.conv_module = ConvolutionModule(cuda, in_dim, 5, 2)
+        # self.conv_module = ConvolutionModule(cuda, in_dim, 5, 2)
         if self.model_name == 'dependency':
             self.tree_module = ChildSumTreeLSTM(cuda, in_dim, mem_dim, criterion)
         elif self.model_name == 'constituency':
@@ -409,8 +410,8 @@ class TreeLSTMSentiment(nn.Module):
         self.tree_module.set_output_module(self.output_module)
 
     def forward(self, tree, inputs, training = False, metric = None):
-        c = self.conv_module(inputs)
-        tree_state, loss = self.tree_module(tree, c, training, metric)
+        # c = self.conv_module(inputs)
+        tree_state, loss = self.tree_module(tree, inputs, training, metric)
         output = tree.output
         return output, loss
 
@@ -423,7 +424,7 @@ class LSTMSentiment(nn.Module):
         self.criterion = criterion
         self.train_subtrees = train_subtrees
         self.num_classes = num_classes
-        self.conv_module = ConvolutionModule(cuda, in_dim, 5, 2)
+        self.conv_module = ConvModule(cuda, in_dim, 300, 5)
         if model_name == 'bilstm':
             self.bidirectional = True
             self.output_module = SentimentModule(cuda, 2*mem_dim, num_classes, dropout=True)
