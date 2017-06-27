@@ -6,7 +6,7 @@ import Constants
 import utils
 import numpy as np
 import math
-from conv_model import ConvModule
+from conv_model import ConvModule, MultiConvModule
 
 class BinaryTreeLeafModule(nn.Module):
     """
@@ -424,7 +424,7 @@ class LSTMSentiment(nn.Module):
         self.criterion = criterion
         self.train_subtrees = train_subtrees
         self.num_classes = num_classes
-        self.conv_module = ConvModule(cuda, in_dim, 300, 5)
+        self.conv_module = MultiConvModule(cuda, 300, [100, 200], [3, 5])
         if model_name == 'bilstm':
             self.bidirectional = True
             self.output_module = SentimentModule(cuda, 2*mem_dim, num_classes, dropout=True)
