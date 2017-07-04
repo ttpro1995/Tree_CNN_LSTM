@@ -20,3 +20,11 @@ def test_multi_conv():
     print (conv)
     output = conv(sentence)
     print (output.size())
+
+def test_multi_conv():
+    emb_size = 300
+    sentence = Var(torch.rand(24, 1, emb_size))
+    conv = MultiConvModule(0, 300, [100, 200, 300], [3, 5, 7])
+    print (conv)
+    output = conv(sentence)
+    print (output.size())
