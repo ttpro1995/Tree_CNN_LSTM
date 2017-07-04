@@ -406,12 +406,14 @@ class TreeLSTMSentiment(nn.Module):
             self.tree_module = ChildSumTreeLSTM(cuda, in_dim, mem_dim, criterion)
         elif self.model_name == 'constituency':
             self.tree_module = BinaryTreeLSTM(cuda, in_dim, mem_dim, criterion)
+        self.conv_module = MultiConvModule(cuda, 300, [300], [5])
         self.output_module = SentimentModule(cuda, mem_dim, num_classes, dropout=True)
         self.tree_module.set_output_module(self.output_module)
 
     def forward(self, tree, inputs, training = False, metric = None):
         # c = self.conv_module(inputs)
-        tree_state, loss = self.tree_module(tree, inputs, training, metric)
+        c_out = self.conv_module(inputs)
+        tree_state, loss = self.tree_module(tree, c_out, training, metric)
         output = tree.output
         return output, loss
 
