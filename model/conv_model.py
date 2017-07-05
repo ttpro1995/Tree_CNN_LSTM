@@ -49,7 +49,7 @@ class MultiConvModule(nn.Module):
             self.convList.append(conv)
 
         self.in_dropout = nn.Dropout(p=0.5)
-        self.out_dropout = nn.Dropout(p=0.1)
+        self.out_dropout = nn.Dropout(p=0.2)
         if self.cudaFlag:
             self.convList = self.convList.cuda()
             self.in_dropout = self.in_dropout.cuda()
@@ -69,7 +69,7 @@ class MultiConvModule(nn.Module):
         for i in range(self.n_conv):
             output = F.relu(self.convList[i](sentence))
             outputList.append(output)
-        output = torch.cat(outputList, dim = 1)
+        output = torch.cat(outputList, 1)
 
 
         output = output.squeeze(3)
