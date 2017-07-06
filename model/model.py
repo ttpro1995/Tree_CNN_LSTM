@@ -402,11 +402,12 @@ class TreeLSTMSentiment(nn.Module):
         self.cudaFlag = cuda
         self.model_name = model_name
         # self.conv_module = ConvolutionModule(cuda, in_dim, 5, 2)
+        in_dim = 200 # due to conv model
         if self.model_name == 'dependency':
             self.tree_module = ChildSumTreeLSTM(cuda, in_dim, mem_dim, criterion)
         elif self.model_name == 'constituency':
             self.tree_module = BinaryTreeLSTM(cuda, in_dim, mem_dim, criterion)
-        self.conv_module = MultiConvModule(cuda, 300, [300], [5])
+        self.conv_module = MultiConvModule(cuda, 300, [100, 100], [5, 3])
         self.output_module = SentimentModule(cuda, mem_dim, num_classes, dropout=True)
         self.tree_module.set_output_module(self.output_module)
 
