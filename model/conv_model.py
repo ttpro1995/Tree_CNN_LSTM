@@ -61,7 +61,7 @@ class MultiConvModule(nn.Module):
         :param sentence: sentence embedding matrix (seq_length, 1, emb_dim)
         :return: (seq_length, 1, n_filter)
         """
-        sentence = self.in_dropout(sentence)
+        sentence = self.in_dropout(sentence) # (seq_len, 1, emb_dim)
         sentence = sentence.unsqueeze(2) # (seq_len, 1, 1, emb_dim)
         sentence = torch.transpose(sentence, 0, 2) # (1, 1. seq_len, emb_dim)
         #output = self.conv(sentence) # (1, n_filter, seq_len, 1)
