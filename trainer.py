@@ -41,12 +41,14 @@ class SentimentTrainer(object):
             emb = F.torch.unsqueeze(self.embedding_model(input), 1)
 
             if self.args.model_name == 'lstm' or self.args.model_name == 'bilstm':
-                output, err, n_subtrees = self.model.forward(tree, emb, training=True)
-                if self.args.train_subtrees == -1:
-                    n_subtrees = len(tree.depth_first_preorder())
-                else:
-                    n_subtrees = self.args.train_subtrees
-                batch_size = self.args.batchsize * n_subtrees
+                output, err = self.model(emb, target,training=True)
+                # sentences dataset now
+                # if self.args.train_subtrees == -1:
+                #     n_subtrees = len(tree.depth_first_preorder())
+                # else:
+                #     n_subtrees = self.args.train_subtrees
+                # batch_size = self.args.batchsize * n_subtrees
+                batch_size = self.args.batchsize
             else:
                 output, err = self.model.forward(tree, emb, training=True)
                 batch_size = self.args.batchsize
@@ -114,7 +116,10 @@ class SentimentTrainer(object):
                 input = input.cuda()
                 target = target.cuda()
             emb = F.torch.unsqueeze(self.embedding_model(input),1)
-            output, _ = self.model(tree, emb, metric = subtree_metric) # size(1,5)
+            if self.args.model_name == 'lstm' or self.args.model_name == 'bilstm':
+                output, err = self.model(emb, target)
+            else:
+                output, _ = self.model(tree, emb, metric = subtree_metric) # size(1,5)
             err = self.criterion(output, target)
             loss += err.data[0]
             if self.args.num_classes == 3:
@@ -122,9 +127,12 @@ class SentimentTrainer(object):
             val, pred = torch.max(output, 1)
             pred_cpu = pred.data.cpu()[0][0]
             predictions[i] = pred_cpu
-            correct = pred_cpu == tree.gold_label
-            if self.args.model_name == 'lstm' or self.args.model_name == 'bilstm':
-                subtree_metric.count_depth(correct, 0, tree.idx, pred_cpu)
+            # if self.args.model_name == 'lstm' or self.args.model_name == 'bilstm':
+            #     correct = pred_cpu == label
+            # else:
+            #     correct = pred_cpu == tree.gold_label
+            # if self.args.model_name == 'lstm' or self.args.model_name == 'bilstm':
+            #      subtree_metric.count_depth(correct, 0, tree.idx, pred_cpu)
                # predictions[idx] = torch.dot(indices,torch.exp(output.data.cpu()))
         return loss/len(dataset), predictions, subtree_metric
 

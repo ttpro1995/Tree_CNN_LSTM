@@ -422,14 +422,14 @@ class TreeLSTMSentiment(nn.Module):
 
 ######################################################
 class LSTMSentiment(nn.Module):
-    def __init__(self, cuda, train_subtrees, in_dim, mem_dim, num_classes, model_name, criterion):
+    def __init__(self, cuda, in_channel, in_dim, mem_dim, num_classes, model_name, criterion):
         super(LSTMSentiment, self).__init__()
         self.cudaFlag = cuda
         self.bidirectional = False
         self.criterion = criterion
-        self.train_subtrees = train_subtrees
+        self.in_channel = in_channel
         self.num_classes = num_classes
-        self.conv_module = MultiConvModule(cuda, 300, 1, [300], [5])
+        self.conv_module = MultiConvModule(cuda, 300, in_channel, [300], [5])
         if model_name == 'bilstm':
             self.bidirectional = True
             self.output_module = SentimentModule(cuda, 2*mem_dim, num_classes, dropout=True)
@@ -449,64 +449,79 @@ class LSTMSentiment(nn.Module):
         params = F.torch.cat(one_dim)
         return params
 
-    def forward(self, tree, vec, training = False, metric = None):
-        '''
-        :param tree: tree structure, for subtree sampling
-        :param vec: embedding vector of tree
-        :param training: training/eval mode
-        :param metric: prevent error, no use here
-        :return:
-        '''
-        nodes = tree.depth_first_preorder()
-        loss = Var(torch.zeros(1))  # init zero loss
-        if self.cudaFlag:
-            loss = loss.cuda()
-
-        if self.train_subtrees == -1:
-            n_subtree = len(nodes)
+    def forward(self, embedding, label = None, training = False, metric = None):
+        loss = None
+        c_vec = self.conv_module(embedding)
+        _, hn = self.lstm(c_vec)
+        h = hn[0]
+        if self.bidirectional:
+            h = torch.cat(h, 1)
         else:
-            n_subtree = self.train_subtrees + 1
-        discard_subtree = 0 # trees are discard because neutral
+            h = torch.squeeze(h, 1)
+        output = self.output_module(h, training)
         if training:
-            for i in range(n_subtree):
-                if i == 0:
-                    node = nodes[0]
-                elif self.train_subtrees != -1:
-                    node = nodes[int(math.ceil(np.random.uniform(0, len(nodes)-1)))]
-                else:
-                    node = nodes[i]
-                lo, hi = node.lo, node.hi
-                span_vec = vec[lo-1:hi] # [inclusive, excludsive)
-                c_vec = self.conv_module(span_vec)
-                _, hn = self.lstm(c_vec)
-                h = hn[0]
-                if self.bidirectional:
-                    h = torch.cat(h, 1)
-                else:
-                    h = torch.squeeze(h, 1)
-                output = self.output_module.forward(h, training)
+            loss =  self.criterion(output, label)
+        return output, loss
 
-                if training and node.gold_label != None:
-                    target = utils.map_label_to_target_sentiment(node.gold_label, self.num_classes)
-                    if target is None:
-                        discard_subtree += 1
-                        continue
-                    target = Var(target)
-                    if self.cudaFlag:
-                        target = target.cuda()
-                    loss = loss + self.criterion(output, target)
+    # old api with subsample tree
+    # def forward(self, tree, vec, training = False, metric = None):
+    #     '''
+    #     :param tree: tree structure, for subtree sampling
+    #     :param vec: embedding vector of tree
+    #     :param training: training/eval mode
+    #     :param metric: prevent error, no use here
+    #     :return:
+    #     '''
+    #     nodes = tree.depth_first_preorder()
+    #     loss = Var(torch.zeros(1))  # init zero loss
+    #     if self.cudaFlag:
+    #         loss = loss.cuda()
+    #
+    #     if self.train_subtrees == -1:
+    #         n_subtree = len(nodes)
+    #     else:
+    #         n_subtree = self.train_subtrees + 1
+    #     discard_subtree = 0 # trees are discard because neutral
+    #     if training:
+    #         for i in range(n_subtree):
+    #             if i == 0:
+    #                 node = nodes[0]
+    #             elif self.train_subtrees != -1:
+    #                 node = nodes[int(math.ceil(np.random.uniform(0, len(nodes)-1)))]
+    #             else:
+    #                 node = nodes[i]
+    #             lo, hi = node.lo, node.hi
+    #             span_vec = vec[lo-1:hi] # [inclusive, excludsive)
+    #             c_vec = self.conv_module(span_vec)
+    #             _, hn = self.lstm(c_vec)
+    #             h = hn[0]
+    #             if self.bidirectional:
+    #                 h = torch.cat(h, 1)
+    #             else:
+    #                 h = torch.squeeze(h, 1)
+    #             output = self.output_module.forward(h, training)
 
-            loss = loss
-            n_subtree = n_subtree -discard_subtree
-            return output, loss, n_subtree
-        else:
-            c_vec = self.conv_module(vec)
-            _, hn = self.lstm(c_vec)
-            h = hn[0]
-            if self.bidirectional:
-                h = torch.cat(h, 1)
-            else:
-                h = torch.squeeze(h, 1)
-            output = self.output_module(h, training)
-            return output, _
+    #             if training and node.gold_label != None:
+    #                 target = utils.map_label_to_target_sentiment(node.gold_label, self.num_classes)
+    #                 if target is None:
+    #                     discard_subtree += 1
+    #                     continue
+    #                 target = Var(target)
+    #                 if self.cudaFlag:
+    #                     target = target.cuda()
+    #                 loss = loss + self.criterion(output, target)
+    #
+    #         loss = loss
+    #         n_subtree = n_subtree -discard_subtree
+    #         return output, loss, n_subtree
+    #     else:
+    #         c_vec = self.conv_module(vec)
+    #         _, hn = self.lstm(c_vec)
+    #         h = hn[0]
+    #         if self.bidirectional:
+    #             h = torch.cat(h, 1)
+    #         else:
+    #             h = torch.squeeze(h, 1)
+    #         output = self.output_module(h, training)
+    #         return output, _
 

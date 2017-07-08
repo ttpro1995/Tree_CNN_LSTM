@@ -215,3 +215,74 @@ class SSTDataset(data.Dataset):
             labels = map(lambda x: float(x), f.readlines())
             labels = torch.Tensor(labels)
         return labels
+
+class SeqSSTDataset(data.Dataset):
+    """
+    Sequence dataset, no tree structure whatever
+    """
+    def __init__(self, path, vocab, num_classes, fine_grain, model_name):
+        super(SeqSSTDataset, self).__init__()
+        self.vocab = vocab
+        self.num_classes = num_classes
+        self.fine_grain = fine_grain
+        # no span ?!
+        self.sentences = self.read_sentences(os.path.join(path,'sents.toks'))
+        self.labels = self.read_labels(os.path.join(path,'labels.txt'))
+        self.size = len(self.labels)
+
+    def __len__(self):
+        return self.size
+
+    def __getitem__(self, index):
+        # ltree = deepcopy(self.ltrees[index])
+        # rtree = deepcopy(self.rtrees[index])
+        # lsent = deepcopy(self.lsentences[index])
+        # rsent = deepcopy(self.rsentences[index])
+        # label = deepcopy(self.labels[index])
+        sent = deepcopy(self.sentences[index])
+        label = deepcopy(self.labels[index])
+        tree = None
+        return (None, sent, label)
+
+    def read_sentences(self, filename):
+        with open(filename,'r') as f:
+            sentences = [self.read_sentence(line) for line in tqdm(f.readlines())]
+        return sentences
+
+    def read_sentence(self, line):
+        indices = self.vocab.convertToIdx(line.split(), Constants.UNK_WORD)
+        return torch.LongTensor(indices)
+
+    def read_trees(self, filename_parents, filename_labels):
+        pfile = open(filename_parents, 'r') # parent node
+        lfile = open(filename_labels, 'r') # label node
+        p = pfile.readlines()
+        l = lfile.readlines()
+        pl = zip(p, l) # (parent, label) tuple
+        trees = [self.read_tree(p_line, l_line) for p_line, l_line in tqdm(pl)]
+
+        return trees
+
+    def parse_dlabel_token(self, x):
+        if x == '#':
+            return None
+        else:
+            if self.fine_grain: # -2 -1 0 1 2 => 0 1 2 3 4
+                return int(x)+2
+            else: # # -2 -1 0 1 2 => 0 1 2
+                tmp = int(x)
+                if tmp < 0:
+                    return 0
+                elif tmp == 0:
+                    return 1
+                elif tmp >0 :
+                    return 2
+
+
+
+    def read_labels(self, filename):
+        # Not in used
+        with open(filename,'r') as f:
+            labels = map(lambda x: float(x), f.readlines())
+            labels = torch.Tensor(labels)
+        return labels

@@ -23,7 +23,7 @@ from model import *
 from tree import Tree
 from vocab import Vocab
 # DATASET CLASS FOR SICK DATASET
-from dataset import SSTDataset
+from dataset import SSTDataset, SeqSSTDataset
 # METRICS CLASS FOR EVALUATION
 from metrics import Metrics
 # UTILITY FUNCTIONS
@@ -74,7 +74,10 @@ def main():
 
     # write unique words from all token files
     token_files = [os.path.join(split, 'sents.toks') for split in [train_dir, dev_dir, test_dir]]
+    #
     vocab_file = os.path.join(args.data,'vocab-cased.txt') # use vocab-cased
+    if not os.path.isfile(vocab_file):
+        build_vocab(token_files, vocab_file)
     # build_vocab(token_files, vocab_file) NO, DO NOT BUILD VOCAB,  USE OLD VOCAB
 
     # get vocab object from vocab file previously written
@@ -85,12 +88,18 @@ def main():
 
     is_preprocessing_data = False # let program turn off after preprocess data
 
+    if args.model_name == 'dependency' or args.model_name == 'constituency':
+        DatasetClass = SSTDataset
+    elif args.model_name == 'lstm' or args.model_name == 'bilstm':
+        DatasetClass = SeqSSTDataset
+
+
     # train
     train_file = os.path.join(args.data,'sst_train.pth')
     if os.path.isfile(train_file):
         train_dataset = torch.load(train_file)
     else:
-        train_dataset = SSTDataset(train_dir, vocab, args.num_classes, args.fine_grain, args.model_name)
+        train_dataset = DatasetClass(train_dir, vocab, args.num_classes, args.fine_grain, args.model_name)
         torch.save(train_dataset, train_file)
         is_preprocessing_data = True
 
@@ -99,7 +108,7 @@ def main():
     if os.path.isfile(dev_file):
         dev_dataset = torch.load(dev_file)
     else:
-        dev_dataset = SSTDataset(dev_dir, vocab, args.num_classes, args.fine_grain, args.model_name)
+        dev_dataset = DatasetClass(dev_dir, vocab, args.num_classes, args.fine_grain, args.model_name)
         torch.save(dev_dataset, dev_file)
         is_preprocessing_data = True
 
@@ -108,7 +117,7 @@ def main():
     if os.path.isfile(test_file):
         test_dataset = torch.load(test_file)
     else:
-        test_dataset = SSTDataset(test_dir, vocab, args.num_classes, args.fine_grain, args.model_name)
+        test_dataset = DatasetClass(test_dir, vocab, args.num_classes, args.fine_grain, args.model_name)
         torch.save(test_dataset, test_file)
         is_preprocessing_data = True
 
@@ -128,7 +137,7 @@ def main():
                 )
     elif args.model_name == 'lstm' or args.model_name == 'bilstm':
         model = LSTMSentiment(
-                    args.cuda, args.train_subtrees,
+                    args.cuda, args.channel,
                     args.input_dim, args.mem_dim,
                     args.num_classes, args.model_name, criterion
                 )
@@ -287,6 +296,7 @@ def main():
         test_idx = np.load(test_idx_dir)
 
     mode = args.mode
+    dev_loss, dev_pred, _ = trainer.test(dev_dataset) # make sure thing go smooth before train
     if mode == 'DEBUG':
         for epoch in range(args.epochs):
             # print a tree
@@ -349,12 +359,21 @@ def main():
                 utils.mkdir_p(args.saved)
                 torch.save(model, os.path.join(args.saved, '_model_' + filename))
                 torch.save(embedding_model, os.path.join(args.saved, '_embedding_' + filename))
+                if args.channel ==2:
+                    torch.save(embedding_model2, os.path.join(args.saved, '_embedding2_' + filename))
             gc.collect()
         print('epoch ' + str(max_dev_epoch) + ' dev score of ' + str(max_dev))
         print('eva on test set ')
+        # TODO: case of multi_channel
         model = torch.load(os.path.join(args.saved,'_model_' + filename))
         embedding_model = torch.load(os.path.join(args.saved, '_embedding_' + filename))
-        trainer = SentimentTrainer(args, model, embedding_model, criterion, optimizer)
+        if args.channel == 1:
+            trainer = SentimentTrainer(args, model, embedding_model, criterion, optimizer)
+        elif args.channel ==2:
+            embedding_model2 = torch.load(os.path.join(args.saved, '_embedding2_' + filename))
+            trainer = MultiChannelSentimentTrainer(args, model, [embedding_model, embedding_model2], criterion,
+                                                   optimizer)
+
         test_loss, test_pred, subtree_metrics = trainer.test(test_dataset)
         test_acc = metrics.sentiment_accuracy_score(test_pred, test_dataset.labels, num_classes=args.num_classes)
         print('Epoch with max dev:' + str(max_dev_epoch) + ' |test percentage ' + str(test_acc))
