@@ -1,5 +1,6 @@
 from __future__ import print_function
-
+import torch.backends.cudnn as cudnn
+cudnn.benchmark = True # make something faster
 import os, time, argparse
 from tqdm import tqdm
 import numpy
@@ -11,6 +12,7 @@ import utils
 import gc
 import sys
 from meowlogtool import log_util
+
 
 
 # IMPORT CONSTANTS
@@ -30,6 +32,7 @@ from utils import load_word_vectors, build_vocab
 from config import parse_args
 # TRAIN AND TEST HELPER FUNCTIONS
 from trainer import SentimentTrainer
+from multichannel_trainer import MultiChannelSentimentTrainer
 import numpy as np
 
 # MAIN BLOCK
@@ -111,10 +114,15 @@ def main():
 
     criterion = nn.NLLLoss()
     # initialize model, criterion/loss_function, optimizer
+    if args.embedding == 'multi_channel':
+        args.channel = 2
+        embedding_model2 = nn.Embedding(vocab.size(), args.input_dim)
+    else:
+        args.channel = 1
 
     if args.model_name == 'dependency' or args.model_name == 'constituency':
         model = TreeLSTMSentiment(
-                    args.cuda, vocab.size(),
+                    args.cuda, args.channel,
                     args.input_dim, args.mem_dim,
                     args.num_classes, args.model_name, criterion
                 )
@@ -129,6 +137,8 @@ def main():
 
     if args.cuda:
         embedding_model = embedding_model.cuda()
+        if args.channel ==2:
+            embedding_model2 = embedding_model2.cuda()
 
     if args.cuda:
         model.cuda(), criterion.cuda()
@@ -158,6 +168,13 @@ def main():
         emb_vector_path = emb_vector
         emb_split_token = '\t'
         assert os.path.isfile(emb_vector_path + '.txt')
+    elif args.embedding == 'multi_channel':
+        emb_torch = 'sst_embed1.pth'
+        emb_torch2 = 'sst_embed2.pth'
+        emb_vector_path = args.embedding_other
+        emb_vector_path2 = args.embedding_othert
+        assert os.path.isfile(emb_vector_path + '.txt')
+        assert os.path.isfile(emb_vector_path2 + '.txt')
     else:
         assert False
 
@@ -178,8 +195,35 @@ def main():
             else:
                 emb[vocab.getIndex(word)] = torch.Tensor(emb[vocab.getIndex(word)].size()).normal_(-0.05,0.05)
         torch.save(emb, emb_file)
+        glove_emb = None
+        glove_vocab = None
+        gc.collect()
         is_preprocessing_data = True # flag to quit
         print('done creating emb, quit')
+
+    if args.embedding == 'multi_channel':
+        emb_file2 = os.path.join(args.data, emb_torch2)
+        if os.path.isfile(emb_file2):
+            emb2 = torch.load(emb_file2)
+        else:
+
+            # load glove embeddings and vocab
+            glove_vocab, glove_emb = load_word_vectors(emb_vector_path, emb_split_token)
+            print('==> Embedding vocabulary size: %d ' % glove_vocab.size())
+
+            emb2 = torch.zeros(vocab.size(), glove_emb.size(1))
+
+            for word in vocab.labelToIdx.keys():
+                if glove_vocab.getIndex(word):
+                    emb2[vocab.getIndex(word)] = glove_emb[glove_vocab.getIndex(word)]
+                else:
+                    emb2[vocab.getIndex(word)] = torch.Tensor(emb2[vocab.getIndex(word)].size()).normal_(-0.05, 0.05)
+            torch.save(emb2, emb_file2)
+            glove_emb = None
+            glove_vocab = None
+            gc.collect()
+            is_preprocessing_data = True  # flag to quit
+            print('done creating emb, quit')
 
     if is_preprocessing_data:
         print ('quit program')
@@ -188,7 +232,11 @@ def main():
     # plug these into embedding matrix inside model
     if args.cuda:
         emb = emb.cuda()
+        if args.channel == 2:
+            emb2 = emb2.cuda()
     embedding_model.state_dict()['weight'].copy_(emb)
+    if args.channel == 2:
+        embedding_model2.state_dict()['weight'].copy_(emb2)
 
     if args.optim=='adam':
         optimizer   = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.wd)
@@ -217,10 +265,16 @@ def main():
     utils.count_param(model)
 
     # create trainer object for training and testing
-    if args.model_name == 'dependency' or args.model_name == 'constituency':
+    # if args.model_name == 'dependency' or args.model_name == 'constituency':
+    #     trainer = SentimentTrainer(args, model, embedding_model, criterion, optimizer)
+    # elif args.model_name == 'lstm' or args.model_name == 'bilstm':
+    #     trainer = SentimentTrainer(args, model, embedding_model, criterion, optimizer)
+
+    if args.channel ==1:
+        # trainer = MultiChannelSentimentTrainer(args, model, [embedding_model], criterion, optimizer)
         trainer = SentimentTrainer(args, model, embedding_model, criterion, optimizer)
-    elif args.model_name == 'lstm' or args.model_name == 'bilstm':
-        trainer = SentimentTrainer(args, model, embedding_model, criterion, optimizer)
+    else:
+        trainer = MultiChannelSentimentTrainer(args, model, [embedding_model, embedding_model2], criterion, optimizer)
 
     trainer.set_initial_emb(emb)
 

@@ -397,17 +397,19 @@ class SentimentModule(nn.Module):
         return out
 
 class TreeLSTMSentiment(nn.Module):
-    def __init__(self, cuda, vocab_size, in_dim, mem_dim, num_classes, model_name, criterion):
+    def __init__(self, cuda, in_channel, emb_dim, mem_dim, num_classes, model_name, criterion):
         super(TreeLSTMSentiment, self).__init__()
         self.cudaFlag = cuda
         self.model_name = model_name
+        self.in_channel = in_channel
         # self.conv_module = ConvolutionModule(cuda, in_dim, 5, 2)
-        in_dim = 200 # due to conv model
+        self.conv_module = MultiConvModule(cuda, emb_dim, in_channel, [100, 100], [5, 3])
+        in_dim = 200 # output of convolution layer
         if self.model_name == 'dependency':
             self.tree_module = ChildSumTreeLSTM(cuda, in_dim, mem_dim, criterion)
         elif self.model_name == 'constituency':
             self.tree_module = BinaryTreeLSTM(cuda, in_dim, mem_dim, criterion)
-        self.conv_module = MultiConvModule(cuda, 300, [100, 100], [5, 3])
+
         self.output_module = SentimentModule(cuda, mem_dim, num_classes, dropout=True)
         self.tree_module.set_output_module(self.output_module)
 
@@ -427,7 +429,7 @@ class LSTMSentiment(nn.Module):
         self.criterion = criterion
         self.train_subtrees = train_subtrees
         self.num_classes = num_classes
-        self.conv_module = MultiConvModule(cuda, 300, [300], [5])
+        self.conv_module = MultiConvModule(cuda, 300, 1, [300], [5])
         if model_name == 'bilstm':
             self.bidirectional = True
             self.output_module = SentimentModule(cuda, 2*mem_dim, num_classes, dropout=True)

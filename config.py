@@ -1,6 +1,6 @@
 import argparse
 import random
-def parse_args(type=0):
+def parse_args(type=0, args = None):
     if type == 0:
         parser = argparse.ArgumentParser(description='PyTorch TreeLSTM for Sentence Similarity on Dependency Trees')
         parser.add_argument('--data', default='data/sick/',
@@ -24,7 +24,7 @@ def parse_args(type=0):
         cuda_parser.add_argument('--no-cuda', dest='cuda', action='store_false')
         parser.set_defaults(cuda=True)
 
-        args = parser.parse_args()
+        args = parser.parse_args(args)
         return args
     elif type == 10:
         parser = argparse.ArgumentParser(description='PyTorch TreeLSTM for Sentiment relatedness')
@@ -66,7 +66,7 @@ def parse_args(type=0):
         parser.set_defaults(cuda=True)
         parser.set_defaults(lower=True)
 
-        args = parser.parse_args()
+        args = parser.parse_args(args)
         return args
     elif type == 1:
         parser = argparse.ArgumentParser(description='PyTorch TreeLSTM for Sentiment Analysis Trees')
@@ -94,6 +94,8 @@ def parse_args(type=0):
         parser.add_argument('--paragram', default='/media/vdvinh/25A1FEDE380BDADA/data/john',
                             help='directory with paragram embeddings')
         parser.add_argument('--embedding_other', default='meow',
+                            help='directory with other embeddings')
+        parser.add_argument('--embedding_othert', default='meow',
                             help='directory with other embeddings')
 
         parser.add_argument('--mem_dim', default=0, type=int,
@@ -140,5 +142,10 @@ def parse_args(type=0):
         parser.set_defaults(cuda=True)
         parser.set_defaults(lower=True)
 
-        args = parser.parse_args()
+        args = parser.parse_args(args)
         return args
+
+"""
+/media/vdvinh/25A1FEDE380BDADA/ff/glove_sorted/glove.840B.300d
+../treelstm.pytorch/data/glove/glove.840B.300d
+"""

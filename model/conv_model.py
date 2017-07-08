@@ -19,7 +19,7 @@ class ConvModule(nn.Module):
     def forward(self, sentence):
         """
         Forward function
-        :param sentence: sentence embedding matrix (seq_length, 1, emb_dim) 
+        :param sentence: sentence embedding matrix (seq_length, 1, emb_dim)
         :return: (seq_length, 1, n_filter)
         """
         sentence = self.in_dropout(sentence)
@@ -34,7 +34,7 @@ class ConvModule(nn.Module):
 
 
 class MultiConvModule(nn.Module):
-    def __init__(self, cuda, emb_dim, n_filters, kernel_sizes):
+    def __init__(self, cuda, emb_dim, in_channel, n_filters, kernel_sizes):
         super(MultiConvModule, self).__init__()
         self.cudaFlag = cuda
         self.n_conv = len(n_filters)
@@ -44,7 +44,7 @@ class MultiConvModule(nn.Module):
             kernel_size = kernel_sizes[i]
             n_filter = n_filters[i]
             padding = (kernel_size-1)/2
-            conv = nn.Conv2d(1, n_filter, (kernel_size, emb_dim), padding=(padding,0))
+            conv = nn.Conv2d(in_channel, n_filter, (kernel_size, emb_dim), padding=(padding,0))
             self.paddingList.append(padding)
             self.convList.append(conv)
 
@@ -61,9 +61,9 @@ class MultiConvModule(nn.Module):
         :param sentence: sentence embedding matrix (seq_length, 1, emb_dim)
         :return: (seq_length, 1, n_filter)
         """
-        sentence = self.in_dropout(sentence) # (seq_len, 1, emb_dim)
-        sentence = sentence.unsqueeze(2) # (seq_len, 1, 1, emb_dim)
-        sentence = torch.transpose(sentence, 0, 2) # (1, 1. seq_len, emb_dim)
+        sentence = self.in_dropout(sentence) # (seq_len, in_channel, emb_dim)
+        sentence = sentence.unsqueeze(2) # (seq_len, in_channel, 1, emb_dim)
+        sentence = torch.transpose(sentence, 0, 2) # (1, in_channel, seq_len, emb_dim)
         #output = self.conv(sentence) # (1, n_filter, seq_len, 1)
         outputList = []
         for i in range(self.n_conv):
