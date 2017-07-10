@@ -190,6 +190,7 @@ def main():
     emb_file = os.path.join(args.data, emb_torch)
     if os.path.isfile(emb_file):
         emb = torch.load(emb_file)
+        print('load %s' % (emb_file))
     else:
 
         # load glove embeddings and vocab
@@ -214,8 +215,8 @@ def main():
         emb_file2 = os.path.join(args.data, emb_torch2)
         if os.path.isfile(emb_file2):
             emb2 = torch.load(emb_file2)
+            print ('load %s'%(emb_file2))
         else:
-
             # load glove embeddings and vocab
             glove_vocab, glove_emb = load_word_vectors(emb_vector_path, emb_split_token)
             print('==> Embedding vocabulary size: %d ' % glove_vocab.size())
@@ -344,14 +345,16 @@ def main():
         filename = args.name + '.pth'
         for epoch in range(args.epochs):
             train_loss_while_training = trainer.train(train_dataset)
-            train_loss, train_pred, _ = trainer.test(train_dataset)
+            if epoch%5 == 0:# save at least 1 hours
+                train_loss, train_pred, _ = trainer.test(train_dataset)
+                train_acc = metrics.sentiment_accuracy_score(train_pred, train_dataset.labels, num_classes=args.num_classes)
+                print('Train acc %f ' % (train_acc))
             dev_loss, dev_pred, _ = trainer.test(dev_dataset)
             dev_acc = metrics.sentiment_accuracy_score(dev_pred, dev_dataset.labels, num_classes=args.num_classes)
-            train_acc = metrics.sentiment_accuracy_score(train_pred, train_dataset.labels, num_classes=args.num_classes)
             print('==> Train loss   : %f \t' % train_loss_while_training, end="")
             print('Epoch ', epoch, 'dev percentage ', dev_acc)
             print ('Epoch %d dev percentage %f ' %(epoch, dev_acc))
-            print('Train acc %f '%(train_acc))
+
             if dev_acc > max_dev:
                 print ('update best dev acc %f ' %(dev_acc))
                 max_dev = dev_acc
