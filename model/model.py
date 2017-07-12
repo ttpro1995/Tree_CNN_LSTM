@@ -7,6 +7,7 @@ import utils
 import numpy as np
 import math
 from conv_model import ConvModule, MultiConvModule
+import os
 
 class BinaryTreeLeafModule(nn.Module):
     """
@@ -440,6 +441,34 @@ class LSTMSentiment(nn.Module):
         self.lstm = nn.LSTM(input_size=in_dim, hidden_size=mem_dim, bidirectional=self.bidirectional)
         if self.cudaFlag:
             self.lstm = self.lstm.cuda()
+
+        # state dict file
+
+        self.conv_state_file = 'convolution_state_dict.pth'
+        self.lstm_state_file = 'lstm_state_dict.pth'
+
+    def save_state_files(self, dir):
+        '''
+        Save state dict to file
+        :param dir: where to save file
+        :return:
+        '''
+        torch.save(self.conv_module.state_dict(), os.path.join(dir, self.conv_state_file))
+        torch.save(self.lstm.state_dict(), os.path.join(dir, self.lstm_state_file))
+
+    def load_state_files(self, dir):
+        '''
+
+        :param dir: where to looking for file
+        :return:
+        '''
+        conv_state_path = os.path.join(dir, self.conv_state_file)
+        lstm_state_path = os.path.join(dir, self.lstm_state_file)
+        assert os.path.isfile(conv_state_path)
+        assert os.path.isfile(lstm_state_path)
+        self.conv_module.load_state_dict(torch.load(conv_state_path))
+        self.lstm.load_state_dict(torch.load(lstm_state_path))
+
 
     def getParameters(self):
         '''

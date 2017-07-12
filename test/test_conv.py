@@ -38,3 +38,11 @@ def test_multi_embedding_chanel():
     stacksentences = torch.cat([sentence,sentence2], 1)
     output = conv(stacksentences)
     print (output.size())
+
+def test_get_multiconv_statedict():
+    conv = MultiConvModule(0, 300, 2, [100, 200], [3, 5])
+    torch.save(conv.state_dict(), 'conv_state.pth')
+    conv2 = MultiConvModule(0, 300, 2, [100, 200], [3, 5])
+    conv2.load_state_dict(torch.load('conv_state.pth'))
+    print ('dog')
+
