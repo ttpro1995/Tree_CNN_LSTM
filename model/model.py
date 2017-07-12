@@ -422,14 +422,16 @@ class TreeLSTMSentiment(nn.Module):
 
 ######################################################
 class LSTMSentiment(nn.Module):
-    def __init__(self, cuda, in_channel, in_dim, mem_dim, num_classes, model_name, criterion):
+    def __init__(self, cuda, in_channel, emb_dim, mem_dim, num_classes, model_name, criterion):
         super(LSTMSentiment, self).__init__()
         self.cudaFlag = cuda
         self.bidirectional = False
         self.criterion = criterion
         self.in_channel = in_channel
         self.num_classes = num_classes
-        self.conv_module = MultiConvModule(cuda, 300, in_channel, [300], [5])
+        # self.conv_module = MultiConvModule(cuda, 300, in_channel, [300], [5])
+        self.conv_module = MultiConvModule(cuda, emb_dim, in_channel, [100, 100], [5, 3])
+        in_dim = 200 # due to convolution layer
         if model_name == 'bilstm':
             self.bidirectional = True
             self.output_module = SentimentModule(cuda, 2*mem_dim, num_classes, dropout=True)
