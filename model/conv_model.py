@@ -72,10 +72,10 @@ class MultiConvModule(nn.Module):
         output = torch.cat(outputList, 1)
 
 
-        output = output.squeeze(3)
-        output = torch.transpose(output, 0, 2)
-        output = torch.transpose(output, 1, 2)
-        output = self.out_dropout(output)
+        output = output.squeeze(3) # (1, emb_size, seq)
+        output = torch.transpose(output, 0, 2) # (seq, emb_size, 1)
+        output = torch.transpose(output, 1, 2) # (seq, emb_size, 1)
+        output = self.out_dropout(output) # (seq, 1, emb)
         return output
 
 if __name__ == "__main__":

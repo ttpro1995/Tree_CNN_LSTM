@@ -413,6 +413,21 @@ class TreeLSTMSentiment(nn.Module):
 
         self.output_module = SentimentModule(cuda, mem_dim, num_classes, dropout=True)
         self.tree_module.set_output_module(self.output_module)
+        self.conv_state_file = 'convolution_state_dict.pth'
+
+    def load_state_files(self, dir):
+        '''
+
+        :param dir: where to looking for file
+        :return:
+        '''
+        conv_state_path = os.path.join(dir, self.conv_state_file)
+        print (conv_state_path)
+        assert os.path.isfile(conv_state_path)
+        # assert os.path.isfile(lstm_state_path)
+        self.conv_module.load_state_dict(torch.load(conv_state_path))
+        # self.lstm.load_state_dict(torch.load(lstm_state_path))
+        print ('successful load convolution state dict from %s' %(dir))
 
     def forward(self, tree, inputs, training = False, metric = None):
         # c = self.conv_module(inputs)
@@ -468,6 +483,7 @@ class LSTMSentiment(nn.Module):
         assert os.path.isfile(lstm_state_path)
         self.conv_module.load_state_dict(torch.load(conv_state_path))
         self.lstm.load_state_dict(torch.load(lstm_state_path))
+        print ('successful load state dict from %s', dir)
 
 
     def getParameters(self):

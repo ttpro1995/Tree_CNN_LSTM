@@ -218,7 +218,7 @@ def main():
             print ('load %s'%(emb_file2))
         else:
             # load glove embeddings and vocab
-            glove_vocab, glove_emb = load_word_vectors(emb_vector_path, emb_split_token)
+            glove_vocab, glove_emb = load_word_vectors(emb_vector_path2, emb_split_token)
             print('==> Embedding vocabulary size: %d ' % glove_vocab.size())
 
             emb2 = torch.zeros(vocab.size(), glove_emb.size(1))
@@ -247,6 +247,10 @@ def main():
     embedding_model.state_dict()['weight'].copy_(emb)
     if args.channel == 2:
         embedding_model2.state_dict()['weight'].copy_(emb2)
+
+    # load cnn, lstm state_dict here
+    if args.state_dir != 'meow': #TODO: here
+        model.load_state_files(args.state_dir)
 
     if args.optim=='adam':
         optimizer   = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.wd)
@@ -367,7 +371,7 @@ def main():
             gc.collect()
         print('epoch ' + str(max_dev_epoch) + ' dev score of ' + str(max_dev))
         print('eva on test set ')
-        # TODO: case of multi_channel
+
         model = torch.load(os.path.join(args.saved,'_model_' + filename))
         embedding_model = torch.load(os.path.join(args.saved, '_embedding_' + filename))
         if args.channel == 1:

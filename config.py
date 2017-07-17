@@ -98,6 +98,9 @@ def parse_args(type=0, args = None):
         parser.add_argument('--embedding_othert', default='meow',
                             help='directory with other embeddings')
 
+        parser.add_argument('--state_dir', default='meow',
+                            help='directory to model state dict')
+
         parser.add_argument('--mem_dim', default=0, type=int,
                             help='memory dimension (default: 0 auto set)')
         parser.add_argument('--input_dim', default=300, type=int,
