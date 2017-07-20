@@ -139,7 +139,8 @@ def main():
         model = LSTMSentiment(
                     args.cuda, args.channel,
                     args.input_dim, args.mem_dim,
-                    args.num_classes, args.model_name, criterion
+                    args.num_classes, args.model_name, criterion,
+                    pooling=args.pooling
                 )
 
     embedding_model = nn.Embedding(vocab.size(), args.input_dim)

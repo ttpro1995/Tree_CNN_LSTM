@@ -97,6 +97,8 @@ def parse_args(type=0, args = None):
                             help='directory with other embeddings')
         parser.add_argument('--embedding_othert', default='meow',
                             help='directory with other embeddings')
+        parser.add_argument('--pooling', default=0, type=int,
+                            help='use pooling')
 
         parser.add_argument('--state_dir', default='meow',
                             help='directory to model state dict')

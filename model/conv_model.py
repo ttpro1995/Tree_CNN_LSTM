@@ -34,11 +34,12 @@ class ConvModule(nn.Module):
 
 
 class MultiConvModule(nn.Module):
-    def __init__(self, cuda, emb_dim, in_channel, n_filters, kernel_sizes):
+    def __init__(self, cuda, emb_dim, in_channel, n_filters, kernel_sizes, pooling = False):
         super(MultiConvModule, self).__init__()
         self.cudaFlag = cuda
         self.n_conv = len(n_filters)
         self.paddingList = []
+        self.pooling = pooling
         self.convList = nn.ModuleList()
         for i in range(self.n_conv):
             kernel_size = kernel_sizes[i]
@@ -50,10 +51,14 @@ class MultiConvModule(nn.Module):
 
         self.in_dropout = nn.Dropout(p=0.5)
         self.out_dropout = nn.Dropout(p=0.2)
+        if pooling:
+            self.max_pooling = nn.MaxPool2d(kernel_size=(2, 1), padding=(1, 0))
         if self.cudaFlag:
             self.convList = self.convList.cuda()
             self.in_dropout = self.in_dropout.cuda()
             self.out_dropout = self.out_dropout.cuda()
+            if pooling:
+                self.max_pooling = self.max_pooling.cuda()
 
     def forward(self, sentence):
         """
@@ -67,10 +72,14 @@ class MultiConvModule(nn.Module):
         #output = self.conv(sentence) # (1, n_filter, seq_len, 1)
         outputList = []
         for i in range(self.n_conv):
-            output = F.relu(self.convList[i](sentence))
+            o1 = self.convList[i](sentence)
+            if self.pooling:
+                o2 = self.max_pooling(o1)
+            else:
+                o2 = o1
+            output = F.relu(o2)
             outputList.append(output)
         output = torch.cat(outputList, 1)
-
 
         output = output.squeeze(3) # (1, emb_size, seq)
         output = torch.transpose(output, 0, 2) # (seq, emb_size, 1)
