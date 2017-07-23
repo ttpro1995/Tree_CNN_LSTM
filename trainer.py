@@ -77,7 +77,7 @@ class SentimentTrainer(object):
             err.backward()
             k += 1
             if k==self.args.batchsize:
-                if self.args.manually_emb == 1:
+                if self.args.manually_emb == 1 and self.args.emblr > 0: # save time on case doesnt need update
                     if self.args.embwd == 0: # save time on calculate 0 function
                         for f in self.embedding_model.parameters():
                             f.data.sub_(f.grad.data * self.args.emblr)
