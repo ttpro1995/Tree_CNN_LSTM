@@ -108,6 +108,7 @@ class MultiChannelSentimentTrainer(object):
             subtree_metric.current_idx = idx
             tree, sent, label = dataset[idx]
             input = Var(sent, volatile=True)
+            #TODO: fix map label to target sentiment
             target = Var(map_label_to_target_sentiment(label,self.args.num_classes, fine_grain=self.args.fine_grain), volatile=True)
             if self.args.cuda:
                 input = input.cuda()

@@ -136,7 +136,7 @@ def parse_args(type=0, args = None):
 
         parser.add_argument('--seed', default=int(random.random()*1e+9), type=int,
                             help='random seed (default: random)')
-        parser.add_argument('--fine_grain', default=False, type=bool,
+        parser.add_argument('--fine_grain', action = 'store_true',
                             help='fine grained (default False)')
         parser.add_argument('--num_classes', default=0, type=int,
                             help='num_classes to classify (default 0, meaning auto depend on fine_grain)')

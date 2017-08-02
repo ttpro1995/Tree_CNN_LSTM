@@ -2,6 +2,14 @@
 
 Implement cnn layer to tree-lstm/lstm
 
+Install dependencies:
+```
+pip install meowlogtool
+pip install tqdm
+conda install pytorch torchvision cuda80 -c soumith
+```
+
+
 ```
 --data preprocessed sst folder
 --name id of experiment, would become log file

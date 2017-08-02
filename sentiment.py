@@ -193,7 +193,6 @@ def main():
         emb = torch.load(emb_file)
         print('load %s' % (emb_file))
     else:
-
         # load glove embeddings and vocab
         glove_vocab, glove_emb = load_word_vectors(emb_vector_path, emb_split_token)
         print('==> Embedding vocabulary size: %d ' % glove_vocab.size())
@@ -205,10 +204,24 @@ def main():
                 emb[vocab.getIndex(word)] = glove_emb[glove_vocab.getIndex(word)]
             else:
                 emb[vocab.getIndex(word)] = torch.Tensor(emb[vocab.getIndex(word)].size()).normal_(-0.05,0.05)
-        torch.save(emb, emb_file)
+        # torch.save(emb, emb_file)
         glove_emb = None
         glove_vocab = None
         gc.collect()
+        # add pretrain embedding
+        # pretrain embedding would overwrite exist embedding from glove
+        embed1_txt = os.path.join(args.state_dir, 'embed1')
+        if os.path.isfile(embed1_txt+'.txt'):
+            print ('load %s'%(embed1_txt))
+            glove_vocab, glove_emb = load_word_vectors(embed1_txt, emb_split_token)
+            print('==> embed1 vocabulary size: %d ' % glove_vocab.size())
+            for word in vocab.labelToIdx.keys():
+                if glove_vocab.getIndex(word):
+                    emb[vocab.getIndex(word)] = glove_emb[glove_vocab.getIndex(word)]
+                else:
+                    emb[vocab.getIndex(word)] = torch.Tensor(emb[vocab.getIndex(word)].size()).normal_(-0.05, 0.05)
+        torch.save(emb, emb_file) # saved word embedding matrix
+
         is_preprocessing_data = True # flag to quit
         print('done creating emb, quit')
 
@@ -229,6 +242,17 @@ def main():
                     emb2[vocab.getIndex(word)] = glove_emb[glove_vocab.getIndex(word)]
                 else:
                     emb2[vocab.getIndex(word)] = torch.Tensor(emb2[vocab.getIndex(word)].size()).normal_(-0.05, 0.05)
+
+            embed2_txt = os.path.join(args.state_dir, 'embed2')
+            if os.path.isfile(embed2_txt + '.txt'):
+                print('load %s' % (embed2_txt))
+                glove_vocab, glove_emb = load_word_vectors(embed2_txt, emb_split_token)
+                print('==> embed1 vocabulary size: %d ' % glove_vocab.size())
+                for word in vocab.labelToIdx.keys():
+                    if glove_vocab.getIndex(word):
+                        emb2[vocab.getIndex(word)] = glove_emb[glove_vocab.getIndex(word)]
+                    else:
+                        emb2[vocab.getIndex(word)] = torch.Tensor(emb2[vocab.getIndex(word)].size()).normal_(-0.05, 0.05)
             torch.save(emb2, emb_file2)
             glove_emb = None
             glove_vocab = None
