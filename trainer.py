@@ -125,7 +125,7 @@ class SentimentTrainer(object):
             if self.args.num_classes == 3:
                 output[:,1] = -9999 # no need middle (neutral) value
             val, pred = torch.max(output, 1)
-            pred_cpu = pred.data.cpu()[0][0]
+            pred_cpu = pred.data.cpu()[0]
             predictions[i] = pred_cpu
             # if self.args.model_name == 'lstm' or self.args.model_name == 'bilstm':
             #     correct = pred_cpu == label
