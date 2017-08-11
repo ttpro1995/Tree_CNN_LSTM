@@ -327,6 +327,9 @@ def main():
 
     mode = args.mode
     dev_loss, dev_pred, _ = trainer.test(dev_dataset) # make sure thing go smooth before train
+    dev_acc = metrics.sentiment_accuracy_score(dev_pred, dev_dataset.labels)
+    print('==> Dev loss   : %f \t' % dev_loss, end="")
+    print('before run dev percentage ', dev_acc)
     if mode == 'DEBUG':
         for epoch in range(args.epochs):
             # print a tree
@@ -339,7 +342,7 @@ def main():
             test_loss, test_pred, _ = trainer.test(test_dataset)
 
             dev_acc = metrics.sentiment_accuracy_score(dev_pred, dev_dataset.labels)
-            test_acc = metrics.sentiment_accuracy_score(test_pred, test_dataset.labels)
+            # test_acc = metrics.sentiment_accuracy_score(test_pred, test_dataset.labels)
             print('==> Dev loss   : %f \t' % dev_loss, end="")
             print('Epoch ', epoch, 'dev percentage ', dev_acc)
     elif mode == "PRINT_TREE":

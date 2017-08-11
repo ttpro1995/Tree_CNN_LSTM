@@ -226,8 +226,26 @@ class SeqSSTDataset(data.Dataset):
         self.num_classes = num_classes
         self.fine_grain = fine_grain
         # no span ?!
-        self.sentences = self.read_sentences(os.path.join(path,'sents.toks'))
-        self.labels = self.read_labels(os.path.join(path,'labels.txt'))
+        # self.sentences = self.read_sentences(os.path.join(path,'sents.toks'))
+        # self.labels = self.read_labels(os.path.join(path,'labels.txt'))
+        # self.size = len(self.labels)
+        temp_sentences = self.read_sentences(os.path.join(path,'sents.toks'))
+        temp_labels = self.read_labels(os.path.join(path,'labels.txt'))
+
+        if not self.fine_grain:
+            # only get pos or neg
+            new_label = []
+            new_sentences = []
+            for i in range(len(temp_labels)):
+                # if temp_labels != 1: # 0 neg, 1 neutral, 2 pos
+                if temp_labels[i] != 1:
+                    new_label.append(temp_labels[i])
+                    new_sentences.append(temp_sentences[i])
+            self.labels = new_label
+            self.sentences = new_sentences
+        else:
+            self.labels = temp_labels
+            self.sentences = temp_sentences
         self.size = len(self.labels)
 
     def __len__(self):
