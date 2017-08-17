@@ -82,6 +82,8 @@ def main():
 
     # get vocab object from vocab file previously written
     vocab = Vocab(filename=vocab_file)
+    # vocab.add(Constants.UNK)
+
     print('==> SST vocabulary size : %d ' % vocab.size())
 
     # Load SST dataset splits
@@ -185,6 +187,7 @@ def main():
         emb_vector_path2 = args.embedding_othert
         assert os.path.isfile(emb_vector_path + '.txt')
         assert os.path.isfile(emb_vector_path2 + '.txt')
+        assert (os.path.isfile(emb_vector_path2 + '.txt'), emb_vector_path2)
     else:
         assert False
 

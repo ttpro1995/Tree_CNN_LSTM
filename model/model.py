@@ -277,7 +277,7 @@ class ChildSumTreeLSTM(nn.Module):
                 loss = loss + self.criterion(output, target)
             if not training and metric is not None:
                 # if self.args.num_classes == 3:
-                output[:, 1] = -9999  # no need middle (neutral) value
+                # output[:, 1] = -9999  # no need middle (neutral) value
                 val, pred = torch.max(output, 1)
                 pred_cpu = pred.data.cpu()[0][0]
                 correct = pred_cpu == tree.gold_label

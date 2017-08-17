@@ -229,8 +229,8 @@ class SeqSSTDataset(data.Dataset):
         # self.sentences = self.read_sentences(os.path.join(path,'sents.toks'))
         # self.labels = self.read_labels(os.path.join(path,'labels.txt'))
         # self.size = len(self.labels)
-        temp_sentences = self.read_sentences(os.path.join(path,'sents.toks'))
-        temp_labels = self.read_labels(os.path.join(path,'labels.txt'))
+        temp_sentences = self.read_sentences(os.path.join(path,'seq_sents.txt'))
+        temp_labels = self.read_labels(os.path.join(path,'seq_labels.txt'))
 
         if not self.fine_grain:
             # only get pos or neg
@@ -271,36 +271,10 @@ class SeqSSTDataset(data.Dataset):
         indices = self.vocab.convertToIdx(line.split(), Constants.UNK_WORD)
         return torch.LongTensor(indices)
 
-    def read_trees(self, filename_parents, filename_labels):
-        pfile = open(filename_parents, 'r') # parent node
-        lfile = open(filename_labels, 'r') # label node
-        p = pfile.readlines()
-        l = lfile.readlines()
-        pl = zip(p, l) # (parent, label) tuple
-        trees = [self.read_tree(p_line, l_line) for p_line, l_line in tqdm(pl)]
-
-        return trees
-
-    def parse_dlabel_token(self, x):
-        if x == '#':
-            return None
-        else:
-            if self.fine_grain: # -2 -1 0 1 2 => 0 1 2 3 4
-                return int(x)+2
-            else: # # -2 -1 0 1 2 => 0 1 2
-                tmp = int(x)
-                if tmp < 0:
-                    return 0
-                elif tmp == 0:
-                    return 1
-                elif tmp >0 :
-                    return 2
-
-
 
     def read_labels(self, filename):
         # Not in used
-        with open(filename,'r') as f:
-            labels = map(lambda x: float(x), f.readlines())
+        with open(filename,'r') as f: # -2 -1 0 1 2 => 0 1 2 3 4
+            labels = map(lambda x: int(x)+2, f.readlines())
             labels = torch.Tensor(labels)
         return labels
