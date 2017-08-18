@@ -29,6 +29,7 @@ class Metrics():
         if num_classes == 2:
             _labels[_labels==2] = 1
         labels2 = []
+        _labels = torch.Tensor(_labels)
         if test_idx is not None:
             for idx in test_idx:
                 labels2.append(_labels[idx])

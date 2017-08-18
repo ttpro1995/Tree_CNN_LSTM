@@ -237,8 +237,12 @@ class SeqSSTDataset(data.Dataset):
             new_label = []
             new_sentences = []
             for i in range(len(temp_labels)):
-                # if temp_labels != 1: # 0 neg, 1 neutral, 2 pos
-                if temp_labels[i] != 1:
+                # if temp_labels != 1: # 0 1 2 3 4
+                if temp_labels[i] != 2:
+                    if temp_labels[i] < 2:
+                        temp_labels[i] = 0 # neg
+                    elif temp_labels[i]>2 :
+                        temp_labels[i] = 2 # pos
                     new_label.append(temp_labels[i])
                     new_sentences.append(temp_sentences[i])
             self.labels = new_label
