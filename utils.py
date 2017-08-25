@@ -141,6 +141,39 @@ def print_trees_file(args, vocab, dataset, print_list, name = ''):
     tree_dir_link = log_util.up_gist(treedir, args.name, 'tree')
     print('Print tree link '+tree_dir_link)
 
+
+def print_trees_file_all(args, vocab, dataset, print_list, name = ''):
+    name = name + '.txt'
+    treedir = os.path.join(args.logs, args.name)
+    folder_dir = treedir
+    mkdir_p(treedir)
+    treedir = os.path.join(treedir, args.name + name)
+    tree_file = open(treedir, 'w')
+    incorrect = set()
+    for idx in print_list.keys():
+        tree_file.write(str(idx) + ' ')
+        incorrect.add(idx)
+    torch.save(incorrect, os.path.join(folder_dir, args.name + 'incorrect.pth')) # for easy compare
+    tree_file.write('\n-----------------------------------\n')
+
+    n = len(dataset)
+
+    for idx in range(n):
+        tree, sent, label = dataset[idx]
+        sent_toks = vocab.convertToLabels(sent, -1)
+        sentences = ' '.join(sent_toks)
+        tree_file.write('idx_'+str(idx)+' '+sentences+'\n')
+        if idx in print_list.keys():
+            print_tree_file(tree_file, vocab, sent, tree, print_list[idx])
+        else:
+            print_tree_file(tree_file, vocab, sent, tree, None)
+        tree_file.write('------------------------\n')
+    tree_file.close()
+    tree_dir_link = log_util.up_gist(treedir, args.name, 'tree')
+    print('Print tree link '+tree_dir_link)
+
+
+
 def print_trees_file_v2(args, vocab, dataset, print_list, name = ''):
     'Print from numpy array'
     name = name + '.txt'
@@ -164,6 +197,7 @@ def print_trees_file_v2(args, vocab, dataset, print_list, name = ''):
     tree_file.close()
     tree_dir_link = log_util.up_gist(treedir, args.name, 'tree')
     print('Print tree link '+tree_dir_link)
+
 
 def count_param(model):
     print('_param count_')

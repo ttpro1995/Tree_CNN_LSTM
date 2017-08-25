@@ -355,21 +355,35 @@ def main():
         print('break')
         quit()
     elif mode == 'EVALUATE':
+        print ('EVALUATION')
+        print ('--Model information--')
+        print (model)
         filename = args.name + '.pth'
-        epoch = args.epochs
-        model_name = str(epoch)+'_model_'+filename
-        embedding_name = str(epoch)+'_embedding_'+filename
-        model = torch.load(os.path.join(args.saved, model_name))
-        embedding_model = torch.load(os.path.join(args.saved, embedding_name))
+        model = torch.load(os.path.join(args.saved,'_model_' + filename))
+        embedding_model = torch.load(os.path.join(args.saved, '_embedding_' + filename))
+        if args.channel == 1:
+            trainer = SentimentTrainer(args, model, embedding_model, criterion, optimizer)
+        elif args.channel ==2:
+            embedding_model2 = torch.load(os.path.join(args.saved, '_embedding2_' + filename))
+            trainer = MultiChannelSentimentTrainer(args, model, [embedding_model, embedding_model2], criterion,
+                                                   optimizer)
 
-        trainer = SentimentTrainer(args, model, embedding_model, criterion, optimizer)
-        test_loss, test_pred, subtree_metrics = trainer.test(test_dataset, test_idx)
-        test_acc = metrics.sentiment_accuracy_score(test_pred, test_dataset.labels, test_idx)
-        print('Epoch with max dev:' + str(epoch) + ' |test percentage '+ str(test_acc))
-        print ('____________________'+str(args.name)+'___________________')
+        test_loss, test_pred, subtree_metrics = trainer.test(test_dataset)
+        test_acc = metrics.sentiment_accuracy_score(test_pred, test_dataset.labels, num_classes=args.num_classes)
+        print(' |test percentage ' + str(test_acc))
+        result_filename = os.path.join(args.logs,args.name) + 'result.txt'
+        rwriter = open(result_filename, 'w')
+        for i in range(test_pred.size()[0]):
+            rwriter.write(str(int(test_pred[i]))+' '+str(int(test_dataset.labels[i]))+ '\n')
+        rwriter.close()
+        result_link = log_util.up_gist(result_filename, args.name, __file__,
+                                    client_id='ec3ce6baf7dad6b7cf2c',
+                                    client_secret='82240b38a7e662c28b2ca682325d634c9059efb0')
+        print(result_link)
+
         print_list = subtree_metrics.print_list
-        torch.save(print_list, os.path.join(args.saved, args.name + 'printlist.pth'))
-        utils.print_trees_file(args, vocab, test_dataset, print_list, name='tree')
+        utils.print_trees_file_all(args, vocab, test_dataset, print_list, name='Tree')
+        print('____________________' + str(args.name) + '___________________')
     elif mode == "EXPERIMENT":
         print ('--Model information--')
         print (model)
