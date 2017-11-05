@@ -29,5 +29,8 @@ conda install pytorch torchvision cuda80 -c soumith
 python sentiment.py --data data/sst_seq --name lstm3_2c_nope --optim adagrad --lr 0.01 --emblr 0.1 --epochs 21 --wd 1e-4 --model_name lstm --embedding multi_channel --embedding_othert /media/vdvinh/25A1FEDE380BDADA/ff/glove_sorted/glove.840B.300d --embedding_other ../treelstm.pytorch/data/glove/glove.840B.300d
 ```
 
+Pretrained word vector "Glove Amazon" 
+[Google Drive](https://www.google.com)
+
 ### License
 MIT
