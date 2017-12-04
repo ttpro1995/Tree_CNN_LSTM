@@ -455,7 +455,9 @@ def main():
 if __name__ == "__main__":
     args = parse_args(type=1)
     # log to console and file
-    logger1 = log_util.create_logger(os.path.join(args.logs,args.name), print_console=True)
+    log_name = os.path.join(args.logs,args.name)
+    utils.mkdir_p(args.logs)  # create folder if not exist
+    logger1 = log_util.create_logger(log_name, print_console=True)
     logger1.info("LOG_FILE") # log using loggerba
     # attach log to stdout (print function)
     s1 = log_util.StreamToLogger(logger1)

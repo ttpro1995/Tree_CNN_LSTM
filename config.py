@@ -87,7 +87,7 @@ def parse_args(type=0, args = None):
                             help='model name constituency or dependency or lstm or bilstm')
         parser.add_argument('--data', default='data/sst/',
                             help='path to dataset')
-        parser.add_argument('--glove', default='../treelstm.pytorch/data/glove/',
+        parser.add_argument('--glove', default='data/glove/',
                             help='directory with GLOVE embeddings')
         parser.add_argument('--embedding', default='glove',
                             help='embedding type paragram or paragram_xxl or glove (default: glove)')
