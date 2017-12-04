@@ -30,7 +30,7 @@ python sentiment.py --data data/sst_seq --name lstm3_2c_nope --optim adagrad --l
 ```
 
 Pretrained word vector "Glove Amazon" 
-[Google Drive](https://www.google.com)
+[Google Drive](https://goo.gl/4M6Dj2)
 
 ### License
 MIT
